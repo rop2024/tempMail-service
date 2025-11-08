@@ -1,210 +1,97 @@
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
-const axios = require('axios');
 require('dotenv').config();
 
-const mailTMService = require('./services/mailtm');
+// Import routes and middleware
+const emailRoutes = require('./routes/email');
+const { generalLimiter } = require('./middleware/rateLimit');
+const { sanitizeInput } = require('./middleware/validation');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5500', 'http://localhost:5500', 'http://localhost:3000']
+  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  credentials: true
 }));
+
 app.use(morgan('combined'));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// Apply general rate limiting to all routes
+app.use(generalLimiter);
+
+// Global sanitization middleware
+app.use(sanitizeInput);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'OK',
-    message: 'Server is running',
+  res.json({ 
+    status: 'OK', 
+    message: 'Email API Server is running',
     timestamp: new Date().toISOString(),
-    service: 'Mail.tm Integration API'
+    version: '1.0.0',
+    environment: process.env.NODE_ENV
   });
 });
 
-// Service statistics (for debugging)
-app.get('/api/stats', (req, res) => {
+// API routes
+app.use('/api/email', emailRoutes);
+
+// Service statistics endpoint (protected)
+app.get('/api/admin/stats', (req, res) => {
+  // Basic protection for stats endpoint
+  const authHeader = req.headers.authorization;
+  if (authHeader !== `Bearer ${process.env.ADMIN_TOKEN}`) {
+    return res.status(401).json({
+      success: false,
+      error: 'Unauthorized'
+    });
+  }
+
+  const mailTMService = require('./services/mailtm');
   const stats = mailTMService.getStats();
+  
   res.json({
     success: true,
     data: stats
   });
 });
 
-// Mail.tm API proxy endpoints
-app.get('/api/domains', async (req, res) => {
-  try {
-    const response = await axios.get('https://api.mail.tm/domains');
-    res.json(response.data);
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch domains',
-      details: error.message
-    });
-  }
+// 404 handler for API routes
+app.use('/api/*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    error: 'API endpoint not found'
+  });
 });
 
-// Create account endpoint
-app.post('/api/accounts', async (req, res) => {
-  try {
-    const { address, password } = req.body;
-
-    if (!address || !password) {
-      return res.status(400).json({
-        success: false,
-        error: 'Address and password are required'
-      });
-    }
-
-    const result = await mailTMService.createAccount(address, password);
-
-    if (result.success) {
-      res.json({
-        success: true,
-        data: result.data
-      });
-    } else {
-      res.status(400).json({
-        success: false,
-        error: result.error,
-        details: result.details
-      });
-    }
-
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: 'Failed to create account',
-      details: error.message
-    });
-  }
-});
-
-// Get messages for account
-app.get('/api/accounts/:accountId/messages', async (req, res) => {
-  try {
-    const { accountId } = req.params;
-
-    const result = await mailTMService.fetchMessagesForAddress(accountId);
-
-    if (result.success) {
-      res.json({
-        success: true,
-        data: result.data,
-        pagination: result.pagination
-      });
-    } else {
-      res.status(400).json({
-        success: false,
-        error: result.error,
-        details: result.details
-      });
-    }
-
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch messages',
-      details: error.message
-    });
-  }
-});
-
-// Get specific message
-app.get('/api/accounts/:accountId/messages/:messageId', async (req, res) => {
-  try {
-    const { accountId, messageId } = req.params;
-
-    const result = await mailTMService.fetchMessageById(accountId, messageId);
-
-    if (result.success) {
-      res.json({
-        success: true,
-        data: result.data
-      });
-    } else {
-      res.status(400).json({
-        success: false,
-        error: result.error,
-        details: result.details
-      });
-    }
-
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch message',
-      details: error.message
-    });
-  }
-});
-
-// Delete account
-app.delete('/api/accounts/:accountId', async (req, res) => {
-  try {
-    const { accountId } = req.params;
-
-    const result = await mailTMService.deleteAccount(accountId);
-
-    if (result.success) {
-      res.json({
-        success: true,
-        data: result.data
-      });
-    } else {
-      res.status(400).json({
-        success: false,
-        error: result.error,
-        details: result.details
-      });
-    }
-
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: 'Failed to delete account',
-      details: error.message
-    });
-  }
-});
-
-// Get account info
-app.get('/api/accounts/:accountId', async (req, res) => {
-  try {
-    const { accountId } = req.params;
-
-    const result = await mailTMService.getAccountInfo(accountId);
-
-    if (result.success) {
-      res.json({
-        success: true,
-        data: result.data
-      });
-    } else {
-      res.status(400).json({
-        success: false,
-        error: result.error,
-        details: result.details
-      });
-    }
-
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch account info',
-      details: error.message
-    });
-  }
-});
-
-// Error handling middleware
+// Global error handling middleware
 app.use((error, req, res, next) => {
-  console.error('Unhandled error:', error);
+  console.error('Global error handler:', error);
+  
+  // Rate limit errors
+  if (error.status === 429) {
+    return res.status(429).json({
+      success: false,
+      error: 'Too many requests',
+      details: 'Please slow down and try again later'
+    });
+  }
+
+  // Validation errors
+  if (error.name === 'ValidationError') {
+    return res.status(400).json({
+      success: false,
+      error: 'Validation failed',
+      details: error.message
+    });
+  }
+
+  // Default error
   res.status(500).json({
     success: false,
     error: 'Internal server error',
@@ -212,18 +99,15 @@ app.use((error, req, res, next) => {
   });
 });
 
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    error: 'Endpoint not found'
-  });
-});
-
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📧 Mail.tm Service initialized`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
+  console.log(`🚀 Email API Server running on port ${PORT}`);
+  console.log(`📧 Environment: ${process.env.NODE_ENV}`);
   console.log(`🔗 CORS enabled for: ${process.env.CORS_ORIGIN || 'http://localhost:5173'}`);
+  console.log(`📋 Available endpoints:`);
+  console.log(`   POST /api/email/generate - Create new email account`);
+  console.log(`   GET  /api/email/:address/inbox - Get inbox messages`);
+  console.log(`   GET  /api/email/:address/message/:id - Get specific message`);
+  console.log(`   DELETE /api/email/:address - Delete account`);
+  console.log(`   GET  /api/health - Health check`);
 });

@@ -1,7 +1,19 @@
-/* Custom styles can be added here */
-.loading {
-    opacity: 0.6;
-    pointer-events: none;
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+.fade-out {
+    animation: fadeOut 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-10px); }
 }
 
 .message-item {
@@ -9,15 +21,14 @@
 }
 
 .message-item:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
 }
 
-.fade-in {
-    animation: fadeIn 0.5s ease-in;
+.prose {
+    max-width: none;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+.prose pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
 }
