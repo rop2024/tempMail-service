@@ -101,7 +101,6 @@ module.exports = {
     validatePassword,
     validateAccountCreation,
     validateEmailParam,
-    validateMessageId,
     validateMessageIdParam,
     sanitizeInput
 };

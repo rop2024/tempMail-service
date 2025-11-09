@@ -107,8 +107,8 @@ export class Inbox {
             <div class="space-y-3">
                 ${this.messages.map(message => `
                     <div class="message-item bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 cursor-pointer ${
-                        message.seen ? 'opacity-75' : 'border-l-4 border-l-blue-500'
-                    }" data-message-id="${message.id}">
+    message.seen ? 'opacity-75' : 'border-l-4 border-l-blue-500'
+}" data-message-id="${message.id}">
                         <div class="flex justify-between items-start mb-2">
                             <div class="font-semibold text-gray-800 truncate flex items-center">
                                 ${message.seen ? '👁️' : '🔵'} 
@@ -203,9 +203,9 @@ export class Inbox {
                         <div class="border-t pt-4">
                             <div class="prose max-w-none">
                                 ${message.html ? 
-                                    `<div class="email-content">${message.html}</div>` : 
-                                    `<pre class="whitespace-pre-wrap font-sans text-sm">${this.escapeHtml(message.text || 'No content')}</pre>`
-                                }
+        `<div class="email-content">${message.html}</div>` : 
+        `<pre class="whitespace-pre-wrap font-sans text-sm">${this.escapeHtml(message.text || 'No content')}</pre>`
+}
                             </div>
                         </div>
                     </div>
@@ -285,11 +285,11 @@ export class Inbox {
 
     escapeHtml(unsafe) {
         return unsafe
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
     }
 
     formatDate(dateString) {

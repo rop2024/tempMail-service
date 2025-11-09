@@ -56,18 +56,18 @@ export class InboxView {
                                 ${this.state.isLoading ? 'disabled' : ''}
                             >
                                 ${this.state.isLoading ?
-                                    '<i class="fas fa-spinner fa-spin mr-2"></i> Loading...' :
-                                    '<i class="fas fa-sync-alt mr-2"></i> Refresh'
-                                }
+        '<i class="fas fa-spinner fa-spin mr-2"></i> Loading...' :
+        '<i class="fas fa-sync-alt mr-2"></i> Refresh'
+}
                             </button>
                             <button
                                 id="autoRefreshToggle"
                                 class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 font-semibold"
                             >
                                 ${this.state.autoRefresh ?
-                                    '<i class="fas fa-pause mr-2"></i> Pause' :
-                                    '<i class="fas fa-play mr-2"></i> Auto Refresh'
-                                }
+        '<i class="fas fa-pause mr-2"></i> Pause' :
+        '<i class="fas fa-play mr-2"></i> Auto Refresh'
+}
                             </button>
                             <button
                                 id="deleteAccountBtn"
@@ -304,7 +304,7 @@ export class InboxView {
                                             ${message.attachments.length} attachment${message.attachments.length > 1 ? 's' : ''}
                                         </span>
                                     ` : ''}
-                                    ${!message.seen ? `<span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">New</span>` : ''}
+                                    ${!message.seen ? '<span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">New</span>' : ''}
                                 </div>
                             </div>
                         </div>
@@ -903,11 +903,11 @@ export class InboxView {
 
     escapeHtml(unsafe) {
         return unsafe
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
     }
 
     formatDate(dateString) {

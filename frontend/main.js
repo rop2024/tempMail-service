@@ -21,7 +21,15 @@ document.addEventListener('DOMContentLoaded', () => {
     loadDomains();
     setupEventListeners();
     generateRandomPassword();
+    generateRandomUsernameForInput();
 });
+
+// Generate random username for input field
+function generateRandomUsernameForInput() {
+    if (!usernameInput.value.trim()) {
+        usernameInput.value = generateRandomUsername();
+    }
+}
 
 // Event Listeners
 function setupEventListeners() {
@@ -40,33 +48,30 @@ function setupEventListeners() {
     });
 }
 
-// Load available domains (using common Mail.tm domains)
+// Load available domains from API
 async function loadDomains() {
     try {
         domainSelect.innerHTML = '<option value="">Loading domains...</option>';
 
-        // Use common Mail.tm domains instead of fetching dynamically
-        const commonDomains = [
-            '1secmail.com',
-            '1secmail.org',
-            '1secmail.net',
-            'wwjmp.com',
-            'esiix.com',
-            'xojxe.com',
-            'yoggm.com'
-        ];
+        const response = await fetch(`${API_BASE_URL}/email/domains`);
+        const data = await response.json();
 
-        domainSelect.innerHTML = '<option value="">Select a domain</option>';
-        commonDomains.forEach(domain => {
-            const option = document.createElement('option');
-            option.value = domain;
-            option.textContent = domain;
-            domainSelect.appendChild(option);
-        });
+        if (data.success && data.domains && data.domains.length > 0) {
+            domainSelect.innerHTML = '<option value="">Select a domain</option>';
+            data.domains.forEach(domain => {
+                const option = document.createElement('option');
+                option.value = domain.domain;
+                option.textContent = domain.domain;
+                domainSelect.appendChild(option);
+            });
+        } else {
+            throw new Error('No domains available');
+        }
     } catch (error) {
         console.error('Error loading domains:', error);
-        domainSelect.innerHTML = '<option value="">Error loading domains</option>';
-        showError('Failed to load domains. Please refresh the page.');
+        // Fallback to known working domain
+        domainSelect.innerHTML = '<option value="2200freefonts.com">2200freefonts.com</option>';
+        showError('Failed to load domains. Using default domain.');
     }
 }
 
@@ -80,13 +85,25 @@ function generateRandomPassword() {
     passwordInput.value = password;
 }
 
+// Generate random username
+function generateRandomUsername() {
+    const adjectives = ['cool', 'fast', 'smart', 'bright', 'quick', 'sharp', 'swift', 'clever', 'bold', 'brave'];
+    const nouns = ['user', 'mail', 'temp', 'box', 'account', 'email', 'letter', 'message', 'note', 'post'];
+    const randomNum = Math.floor(Math.random() * 1000);
+    
+    const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+    const noun = nouns[Math.floor(Math.random() * nouns.length)];
+    
+    return `${adjective}${noun}${randomNum}`;
+}
+
 // Create new email account using the new endpoint
 async function createAccount() {
-    const username = usernameInput.value.trim();
+    let username = usernameInput.value.trim();
     const password = passwordInput.value;
     const domain = domainSelect.value;
 
-    if (!username || !password || !domain) {
+    if (!password || !domain) {
         showError('Please fill in all fields');
         return;
     }
@@ -94,6 +111,12 @@ async function createAccount() {
     if (password.length < 6) {
         showError('Password must be at least 6 characters long');
         return;
+    }
+
+    // If no username provided, generate a random one
+    if (!username) {
+        username = generateRandomUsername();
+        usernameInput.value = username;
     }
 
     try {
@@ -114,19 +137,39 @@ async function createAccount() {
 
         const data = await response.json();
 
-        if (data.success) {
+        if (response.ok && data.success) {
             currentAccount = data.data;
             showAccountInfo(currentAccount);
             showSuccess('Account created successfully!');
             await loadMessages();
         } else {
-            throw new Error(data.error || 'Failed to create account');
+            // Handle specific error cases
+            if (response.status === 422) {
+                if (data.error && data.error.includes('address')) {
+                    // Address already taken - try with a new random username
+                    const newUsername = generateRandomUsername();
+                    usernameInput.value = newUsername;
+                    showError(`Username "${username}" is taken. Trying with "${newUsername}"...`);
+                    
+                    // Retry with new username after a short delay
+                    setTimeout(() => createAccount(), 1000);
+                    return;
+                } else if (data.error && data.error.includes('domain')) {
+                    showError('Invalid domain selected. Please choose a different domain.');
+                } else {
+                    showError(data.error || 'Invalid account details. Please check your input.');
+                }
+            } else {
+                throw new Error(data.error || `Server error: ${response.status}`);
+            }
         }
     } catch (error) {
         console.error('Error creating account:', error);
 
-        // Handle rate limit errors
-        if (error.message.includes('Too many requests')) {
+        // Handle network errors
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            showError('Network error. Please check your connection and try again.');
+        } else if (error.message.includes('Too many requests')) {
             showError('Too many account creations. Please wait before creating another account.');
         } else {
             showError(error.message);

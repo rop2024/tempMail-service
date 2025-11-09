@@ -84,9 +84,9 @@ export class EmailCreator {
                         ${this.currentState.isLoading ? 'disabled' : ''}
                     >
                         ${this.currentState.isLoading ? 
-                            '<span class="flex items-center justify-center"><span class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span> Creating Account...</span>' : 
-                            'Create Email Account'
-                        }
+        '<span class="flex items-center justify-center"><span class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span> Creating Account...</span>' : 
+        'Create Email Account'
+}
                     </button>
                 </div>
             </div>

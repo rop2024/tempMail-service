@@ -38,9 +38,9 @@ export class MessageView {
                 <!-- Message Body -->
                 <div class="prose max-w-none mb-8">
                     ${this.message.html ? 
-                        `<div class="email-content bg-gray-50 rounded-lg p-6">${this.message.html}</div>` : 
-                        `<pre class="whitespace-pre-wrap font-sans text-gray-800 bg-gray-50 p-6 rounded-lg">${this.escapeHtml(this.message.text || 'No content')}</pre>`
-                    }
+        `<div class="email-content bg-gray-50 rounded-lg p-6">${this.message.html}</div>` : 
+        `<pre class="whitespace-pre-wrap font-sans text-gray-800 bg-gray-50 p-6 rounded-lg">${this.escapeHtml(this.message.text || 'No content')}</pre>`
+}
                 </div>
 
                 <!-- Attachments -->
@@ -138,11 +138,11 @@ export class MessageView {
     // Utility methods
     escapeHtml(unsafe) {
         return unsafe
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
     }
 
     formatDateTime(dateString) {

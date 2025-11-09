@@ -92,3 +92,6 @@ build/
 # Temporary files
 *.tmp
 *.temp
+
+# Documentation (keep only in repo, not in distributed builds)
+# ARCHITECTURE.md is tracked but can be excluded from builds if needed

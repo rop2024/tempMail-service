@@ -96,9 +96,9 @@ export class EmailGenerator {
                                     ${this.state.isLoading ? 'disabled' : ''}
                                 >
                                     ${this.state.isLoading ? 
-                                        '<i class="fas fa-spinner fa-spin mr-2"></i> Creating Account...' : 
-                                        '<i class="fas fa-plus-circle mr-2"></i> Generate Email Address'
-                                    }
+        '<i class="fas fa-spinner fa-spin mr-2"></i> Creating Account...' : 
+        '<i class="fas fa-plus-circle mr-2"></i> Generate Email Address'
+}
                                 </button>
                             </div>
                         </div>
@@ -113,9 +113,9 @@ export class EmailGenerator {
                                     <div class="text-sm text-gray-600 mb-2">Your temporary email will be:</div>
                                     <div id="emailPreview" class="text-xl font-mono font-bold text-gray-800 break-all min-h-8">
                                         ${this.state.username && this.state.selectedDomain ? 
-                                            `${this.state.username}@${this.state.selectedDomain}` : 
-                                            'username@domain.com'
-                                        }
+        `${this.state.username}@${this.state.selectedDomain}` : 
+        'username@domain.com'
+}
                                     </div>
                                 </div>
 

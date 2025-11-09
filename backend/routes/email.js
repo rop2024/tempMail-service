@@ -4,7 +4,6 @@ const mailTMService = require('../services/mailtm');
 const {
     validateAccountCreation,
     validateEmailParam,
-    validateMessageId,
     validateMessageIdParam,
     sanitizeInput
 } = require('../middleware/validation');
@@ -208,10 +207,33 @@ router.delete('/:address',
 );
 
 /**
- * @route   GET /api/email/:address/info
- * @desc    Get account information
+ * @route   GET /api/email/domains
+ * @desc    Get available domains from Mail.tm
  * @access  Public
  */
+router.get('/domains',
+    async (req, res) => {
+        try {
+            const response = await mailTMService.axiosInstance.get('/domains');
+
+            res.json({
+                success: true,
+                data: response.data,
+                domains: response.data['hydra:member'] || [],
+                total: response.data['hydra:totalItems'] || 0
+            });
+
+        } catch (error) {
+            console.error('Error fetching domains:', error.response?.data || error.message);
+            
+            res.status(400).json({
+                success: false,
+                error: 'Failed to fetch domains',
+                details: error.response?.data || { message: error.message }
+            });
+        }
+    }
+);
 router.get('/:address/info',
     validateEmailParam,
     sanitizeInput,

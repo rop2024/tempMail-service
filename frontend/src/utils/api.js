@@ -221,12 +221,12 @@ export async function deleteAddress(address) {
  */
 export async function getDomains() {
     try {
-        const data = await fetchAPI('/domains', {}, true); // Cache domains
+        const data = await fetchAPI('/email/domains', {}, true); // Cache domains
 
         return {
             success: true,
-            domains: data['hydra:member'] || [],
-            total: data['hydra:totalItems'] || 0
+            domains: data.domains || [],
+            total: data.total || 0
         };
 
     } catch (error) {

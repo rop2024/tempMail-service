@@ -64,14 +64,14 @@ class TempMailApp {
         if (!viewContainer) return;
 
         switch (this.currentView) {
-            case 'generator':
-                this.renderGeneratorView();
-                break;
-            case 'inbox':
-                this.renderInboxView();
-                break;
-            default:
-                this.renderGeneratorView();
+        case 'generator':
+            this.renderGeneratorView();
+            break;
+        case 'inbox':
+            this.renderInboxView();
+            break;
+        default:
+            this.renderGeneratorView();
         }
 
         // Update header navigation
