@@ -5,6 +5,7 @@ require('dotenv').config();
 
 // Import routes and middleware
 const emailRoutes = require('./routes/email');
+const notionRoutes = require('./routes/notion');
 const { generalLimiter } = require('./middleware/rateLimit');
 const { sanitizeInput } = require('./middleware/validation');
 
@@ -67,6 +68,7 @@ app.get('/api/health', (req, res) => {
 
 // API routes
 app.use('/api/email', emailRoutes);
+app.use('/api/notion', notionRoutes);
 
 // Service statistics endpoint (protected)
 app.get('/api/admin/stats', (req, res) => {
@@ -132,9 +134,18 @@ app.listen(PORT, () => {
   console.log(`📧 Environment: ${process.env.NODE_ENV}`);
   console.log(`🔗 CORS enabled for: ${process.env.CORS_ORIGIN || 'http://localhost:5173'}`);
   console.log(`📋 Available endpoints:`);
-  console.log(`   POST /api/email/generate - Create new email account`);
-  console.log(`   GET  /api/email/:address/inbox - Get inbox messages`);
-  console.log(`   GET  /api/email/:address/message/:id - Get specific message`);
+  console.log(`\n   📧 Email API:`);
+  console.log(`   POST   /api/email/generate - Create new email account`);
+  console.log(`   GET    /api/email/:address/inbox - Get inbox messages`);
+  console.log(`   GET    /api/email/:address/message/:id - Get specific message`);
   console.log(`   DELETE /api/email/:address - Delete account`);
-  console.log(`   GET  /api/health - Health check`);
+  console.log(`\n   📝 Notion API:`);
+  console.log(`   GET    /api/notion/health - Check Notion configuration`);
+  console.log(`   POST   /api/notion/posts - Create new post`);
+  console.log(`   GET    /api/notion/posts - List all posts`);
+  console.log(`   GET    /api/notion/posts/:id - Get specific post`);
+  console.log(`   PUT    /api/notion/posts/:id - Update post`);
+  console.log(`   DELETE /api/notion/posts/:id - Delete post`);
+  console.log(`\n   🏥 System:`);
+  console.log(`   GET    /api/health - Health check\n`);
 });

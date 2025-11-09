@@ -23,64 +23,39 @@ export class EmailCreator {
 
     render() {
         this.container.innerHTML = `
-            <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
-                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Create Temporary Email</h2>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8 transition-colors duration-200">
+                <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-4">Create Temporary Email</h2>
                 <div class="space-y-4">
                     <div>
-                        <label for="domainSelect" class="block text-sm font-medium text-gray-700 mb-2">
+                        <label for="domainSelect" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Select Domain
                         </label>
                         <select 
                             id="domainSelect" 
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
                             ${this.currentState.isLoading ? 'disabled' : ''}
                         >
                             <option value="">Loading domains...</option>
                         </select>
                     </div>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label for="username" class="block text-sm font-medium text-gray-700 mb-2">
-                                Username
-                            </label>
-                            <input 
-                                type="text" 
-                                id="username" 
-                                placeholder="Enter username"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
-                                value="${this.currentState.username}"
-                                ${this.currentState.isLoading ? 'disabled' : ''}
-                            >
-                        </div>
-                        <div>
-                            <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
-                                Password
-                            </label>
-                            <div class="flex space-x-2">
-                                <input 
-                                    type="password" 
-                                    id="password" 
-                                    placeholder="Enter password"
-                                    class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
-                                    value="${this.currentState.password}"
-                                    ${this.currentState.isLoading ? 'disabled' : ''}
-                                >
-                                <button 
-                                    type="button" 
-                                    id="generatePassword"
-                                    class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition duration-200"
-                                    ${this.currentState.isLoading ? 'disabled' : ''}
-                                >
-                                    🔄
-                                </button>
-                            </div>
-                        </div>
+                    <div>
+                        <label for="username" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Username
+                        </label>
+                        <input 
+                            type="text" 
+                            id="username" 
+                            placeholder="Enter username"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                            value="${this.currentState.username}"
+                            ${this.currentState.isLoading ? 'disabled' : ''}
+                        >
                     </div>
 
                     <button 
                         id="createAccountBtn"
-                        class="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="w-full bg-blue-600 dark:bg-blue-500 text-white py-3 px-4 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                         ${this.currentState.isLoading ? 'disabled' : ''}
                     >
                         ${this.currentState.isLoading ? 
@@ -135,8 +110,6 @@ export class EmailCreator {
     attachEventListeners() {
         const domainSelect = this.container.querySelector('#domainSelect');
         const usernameInput = this.container.querySelector('#username');
-        const passwordInput = this.container.querySelector('#password');
-        const generatePasswordBtn = this.container.querySelector('#generatePassword');
         const createAccountBtn = this.container.querySelector('#createAccountBtn');
 
         domainSelect.addEventListener('change', (e) => {
@@ -147,20 +120,12 @@ export class EmailCreator {
             this.updateState({ username: e.target.value.trim() });
         });
 
-        passwordInput.addEventListener('input', (e) => {
-            this.updateState({ password: e.target.value });
-        });
-
-        generatePasswordBtn.addEventListener('click', () => {
-            this.generateRandomPassword();
-        });
-
         createAccountBtn.addEventListener('click', () => {
             this.createAccount();
         });
 
         // Enter key support
-        passwordInput.addEventListener('keypress', (e) => {
+        usernameInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 this.createAccount();
             }
@@ -173,14 +138,11 @@ export class EmailCreator {
         for (let i = 0; i < 16; i++) {
             password += chars.charAt(Math.floor(Math.random() * chars.length));
         }
-        
-        const passwordInput = this.container.querySelector('#password');
-        passwordInput.value = password;
-        this.updateState({ password });
+        return password;
     }
 
     async createAccount() {
-        const { username, password, selectedDomain } = this.currentState;
+        const { username, selectedDomain } = this.currentState;
 
         // Validation
         if (!username) {
@@ -193,10 +155,8 @@ export class EmailCreator {
             return;
         }
 
-        if (!password || password.length < 6) {
-            this.showError('Password must be at least 6 characters long');
-            return;
-        }
+        // Auto-generate a secure password
+        const password = this.generateRandomPassword();
 
         const emailAddress = `${username}@${selectedDomain}`;
 
@@ -236,9 +196,7 @@ export class EmailCreator {
     reset() {
         this.updateState({
             username: '',
-            password: '',
             selectedDomain: this.domains[0]?.domain || ''
         });
-        this.generateRandomPassword();
     }
 }

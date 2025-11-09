@@ -364,5 +364,211 @@ export function clearAPICache() {
     requestCache.clear();
 }
 
+// ===============================
+// NOTION API FUNCTIONS
+// ===============================
+
+/**
+ * Get Notion API health status
+ * @returns {Promise<Object>} Health status
+ */
+export async function getNotionHealth() {
+    try {
+        const data = await fetchAPI('/notion/health');
+        return {
+            success: true,
+            data: data.data,
+            configured: data.data?.configured || false
+        };
+    } catch (error) {
+        console.error('Error checking Notion health:', error);
+        return {
+            success: false,
+            error: error.message,
+            configured: false
+        };
+    }
+}
+
+/**
+ * Get Notion database information
+ * @returns {Promise<Object>} Database info
+ */
+export async function getNotionDatabaseInfo() {
+    try {
+        const data = await fetchAPI('/notion/database');
+        return {
+            success: true,
+            data: data.data
+        };
+    } catch (error) {
+        console.error('Error fetching Notion database info:', error);
+        return {
+            success: false,
+            error: error.message,
+            data: null
+        };
+    }
+}
+
+/**
+ * Get list of Notion blog posts
+ * @param {Object} options - Query options
+ * @param {number} options.pageSize - Number of posts per page
+ * @param {string} options.status - Filter by status (Published, Draft, etc.)
+ * @param {string} options.sortBy - Sort field (created_time, last_edited_time, title)
+ * @param {string} options.sortDirection - Sort direction (ascending, descending)
+ * @returns {Promise<Object>} List of posts
+ */
+export async function getNotionPosts(options = {}) {
+    try {
+        const params = new URLSearchParams();
+        
+        if (options.pageSize) params.append('pageSize', options.pageSize);
+        if (options.status) params.append('status', options.status);
+        if (options.sortBy) params.append('sortBy', options.sortBy);
+        if (options.sortDirection) params.append('sortDirection', options.sortDirection);
+
+        const queryString = params.toString();
+        const endpoint = `/notion/posts${queryString ? '?' + queryString : ''}`;
+        
+        const data = await fetchAPI(endpoint);
+        return {
+            success: true,
+            data: data.data
+        };
+    } catch (error) {
+        console.error('Error fetching Notion posts:', error);
+        return {
+            success: false,
+            error: error.message,
+            data: { posts: [], total: 0 }
+        };
+    }
+}
+
+/**
+ * Get a specific Notion post by ID
+ * @param {string} pageId - Notion page ID
+ * @returns {Promise<Object>} Post data
+ */
+export async function getNotionPost(pageId) {
+    try {
+        if (!pageId) {
+            throw new Error('Page ID is required');
+        }
+
+        const data = await fetchAPI(`/notion/posts/${encodeURIComponent(pageId)}`);
+        return {
+            success: true,
+            data: data.data
+        };
+    } catch (error) {
+        console.error('Error fetching Notion post:', error);
+        return {
+            success: false,
+            error: error.message,
+            data: null
+        };
+    }
+}
+
+/**
+ * Create a new Notion blog post
+ * @param {Object} postData - Post data
+ * @param {string} postData.title - Post title
+ * @param {string} postData.content - Post content
+ * @param {string} postData.status - Post status
+ * @param {Array} postData.tags - Post tags
+ * @param {string} postData.author - Author name
+ * @returns {Promise<Object>} Created post data
+ */
+export async function createNotionPost(postData) {
+    try {
+        if (!postData.title) {
+            throw new Error('Post title is required');
+        }
+
+        const data = await fetchAPI('/notion/posts', {
+            method: 'POST',
+            body: JSON.stringify(postData)
+        });
+
+        return {
+            success: true,
+            data: data.data,
+            message: data.message || 'Post created successfully'
+        };
+    } catch (error) {
+        console.error('Error creating Notion post:', error);
+        return {
+            success: false,
+            error: error.message,
+            data: null
+        };
+    }
+}
+
+/**
+ * Update a Notion blog post
+ * @param {string} pageId - Notion page ID
+ * @param {Object} updates - Fields to update
+ * @returns {Promise<Object>} Updated post data
+ */
+export async function updateNotionPost(pageId, updates) {
+    try {
+        if (!pageId) {
+            throw new Error('Page ID is required');
+        }
+
+        const data = await fetchAPI(`/notion/posts/${encodeURIComponent(pageId)}`, {
+            method: 'PUT',
+            body: JSON.stringify(updates)
+        });
+
+        return {
+            success: true,
+            data: data.data,
+            message: data.message || 'Post updated successfully'
+        };
+    } catch (error) {
+        console.error('Error updating Notion post:', error);
+        return {
+            success: false,
+            error: error.message,
+            data: null
+        };
+    }
+}
+
+/**
+ * Delete a Notion blog post (archives it)
+ * @param {string} pageId - Notion page ID
+ * @returns {Promise<Object>} Deletion result
+ */
+export async function deleteNotionPost(pageId) {
+    try {
+        if (!pageId) {
+            throw new Error('Page ID is required');
+        }
+
+        const data = await fetchAPI(`/notion/posts/${encodeURIComponent(pageId)}`, {
+            method: 'DELETE'
+        });
+
+        return {
+            success: true,
+            data: data.data,
+            message: data.message || 'Post deleted successfully'
+        };
+    } catch (error) {
+        console.error('Error deleting Notion post:', error);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+}
+
 // Export the base fetch function for custom requests
 export { fetchAPI };

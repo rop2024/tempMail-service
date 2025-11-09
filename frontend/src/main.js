@@ -1,6 +1,7 @@
 import { Header } from './components/header.js';
 import { EmailGenerator } from './components/emailGenerator.js';
 import { InboxView } from './components/inboxView.js';
+import { PopularArticles } from './components/PopularArticles.js';
 import { Footer } from './components/footer.js';
 import { pollingService } from './services/pollingService.js';
 import { healthCheck } from './utils/api.js';
@@ -14,6 +15,7 @@ class TempMailApp {
         this.footer = new Footer();
         this.emailGenerator = null;
         this.inboxView = null;
+        this.popularArticles = null;
 
         this.init();
     }
@@ -44,16 +46,20 @@ class TempMailApp {
         if (!appContainer) return;
 
         appContainer.innerHTML = `
-            <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col">
+            <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col transition-colors duration-200">
                 ${this.header.render()}
 
                 <main class="flex-1 container mx-auto px-4 py-8">
+                    <div id="popular-articles-container"></div>
                     <div id="view-container"></div>
                 </main>
 
                 ${this.footer.render()}
             </div>
         `;
+
+        // Initialize Popular Articles
+        this.initializePopularArticles();
 
         // Render initial view
         this.renderCurrentView();
@@ -127,6 +133,14 @@ class TempMailApp {
         this.header.attachEventListeners((view) => {
             this.handleViewChange(view);
         });
+    }
+
+    initializePopularArticles() {
+        const container = document.getElementById('popular-articles-container');
+        if (!container) return;
+
+        this.popularArticles = new PopularArticles(container);
+        this.popularArticles.init();
     }
 
     handleViewChange(view) {

@@ -1,3 +1,4 @@
+/* Animations */
 .fade-in {
     animation: fadeIn 0.3s ease-in;
 }
@@ -16,6 +17,7 @@
     to { opacity: 0; transform: translateY(-10px); }
 }
 
+/* Message Items */
 .message-item {
     transition: all 0.2s ease-in-out;
 }
@@ -24,6 +26,7 @@
     transform: translateY(-1px);
 }
 
+/* Prose Styling */
 .prose {
     max-width: none;
 }
@@ -31,4 +34,83 @@
 .prose pre {
     white-space: pre-wrap;
     word-wrap: break-word;
+}
+
+/* Navigation Buttons */
+.nav-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    background-color: #f3f4f6;
+    color: #374151;
+}
+
+.nav-btn:hover:not(:disabled) {
+    background-color: #e5e7eb;
+}
+
+.nav-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+.nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.nav-btn-active {
+    background-color: #2563eb;
+    color: white;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.nav-btn-active:hover {
+    background-color: #1d4ed8;
+}
+
+/* Dark Mode Navigation Buttons */
+.dark .nav-btn {
+    background-color: #374151;
+    color: #d1d5db;
+}
+
+.dark .nav-btn:hover:not(:disabled) {
+    background-color: #4b5563;
+}
+
+.dark .nav-btn-active {
+    background-color: #3b82f6;
+}
+
+.dark .nav-btn-active:hover {
+    background-color: #2563eb;
+}
+
+.dark .nav-btn:disabled:hover {
+    background-color: #374151;
+}
+
+/* Dark Mode Support */
+.dark {
+    color-scheme: dark;
+}
+
+/* Smooth theme transitions */
+* {
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 200ms;
+}
+
+/* Preserve animation performance */
+.message-item,
+.fade-in,
+.fade-out,
+button:active {
+    transition-property: all;
 }

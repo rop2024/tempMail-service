@@ -9,7 +9,7 @@ export class Inbox {
         this.currentState = {
             isLoading: false,
             selectedMessage: null,
-            autoRefresh: false,
+            autoRefresh: true,
             refreshInterval: null
         };
         
@@ -21,10 +21,8 @@ export class Inbox {
         await this.loadMessages();
         this.attachEventListeners();
         
-        // Start auto-refresh if enabled
-        if (this.currentState.autoRefresh) {
-            this.startAutoRefresh();
-        }
+        // Start auto-refresh (enabled by default)
+        this.startAutoRefresh();
     }
 
     render() {
@@ -261,7 +259,7 @@ export class Inbox {
         this.stopAutoRefresh(); // Clear any existing interval
         this.currentState.refreshInterval = setInterval(() => {
             this.loadMessages();
-        }, 10000); // Refresh every 10 seconds
+        }, 5000); // Refresh every 5 seconds for faster updates
     }
 
     stopAutoRefresh() {
