@@ -70,6 +70,17 @@ export class Header {
                         <div class="flex items-center space-x-2">
                             <nav class="flex space-x-1 mr-2">
                                 <button 
+                                    id="nav-home" 
+                                    class="nav-btn ${this.currentView === 'home' ? 'nav-btn-active' : ''}"
+                                    data-view="home"
+                                    title="Home (Ctrl+H)"
+                                >
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                                    </svg>
+                                    <span class="hidden sm:inline">Home</span>
+                                </button>
+                                <button 
                                     id="nav-generator" 
                                     class="nav-btn ${this.currentView === 'generator' ? 'nav-btn-active' : ''}"
                                     data-view="generator"
@@ -117,9 +128,17 @@ export class Header {
     }
 
     attachEventListeners(onViewChange) {
+        const homeBtn = document.getElementById('nav-home');
         const generatorBtn = document.getElementById('nav-generator');
         const inboxBtn = document.getElementById('nav-inbox');
         const themeToggle = document.getElementById('theme-toggle');
+
+        if (homeBtn) {
+            homeBtn.addEventListener('click', () => {
+                this.setActiveView('home');
+                onViewChange('home');
+            });
+        }
 
         if (generatorBtn) {
             generatorBtn.addEventListener('click', () => {
@@ -155,10 +174,14 @@ export class Header {
     setActiveView(view) {
         this.currentView = view;
         
+        const homeBtn = document.getElementById('nav-home');
         const generatorBtn = document.getElementById('nav-generator');
         const inboxBtn = document.getElementById('nav-inbox');
 
         // Update button states
+        if (homeBtn) {
+            homeBtn.className = `nav-btn ${view === 'home' ? 'nav-btn-active' : ''}`;
+        }
         if (generatorBtn) {
             generatorBtn.className = `nav-btn ${view === 'generator' ? 'nav-btn-active' : ''}`;
         }

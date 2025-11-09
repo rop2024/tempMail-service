@@ -1,4 +1,5 @@
 import { Header } from './components/header.js';
+import { HomePage } from './components/HomePage.js';
 import { EmailGenerator } from './components/emailGenerator.js';
 import { InboxView } from './components/inboxView.js';
 import { PopularArticles } from './components/PopularArticles.js';
@@ -9,10 +10,11 @@ import './styles/main.css';
 
 class TempMailApp {
     constructor() {
-        this.currentView = 'generator';
+        this.currentView = 'home';
         this.currentAccount = null;
         this.header = new Header();
         this.footer = new Footer();
+        this.homePage = null;
         this.emailGenerator = null;
         this.inboxView = null;
         this.popularArticles = null;
@@ -50,19 +52,19 @@ class TempMailApp {
                 ${this.header.render()}
 
                 <main class="flex-1 container mx-auto px-4 py-8">
-                    <div id="popular-articles-container"></div>
                     <div id="view-container"></div>
+                    <div id="popular-articles-container"></div>
                 </main>
 
                 ${this.footer.render()}
             </div>
         `;
 
-        // Initialize Popular Articles
-        this.initializePopularArticles();
-
         // Render initial view
         this.renderCurrentView();
+
+        // Initialize Popular Articles after the main view
+        this.initializePopularArticles();
     }
 
     renderCurrentView() {
@@ -70,6 +72,9 @@ class TempMailApp {
         if (!viewContainer) return;
 
         switch (this.currentView) {
+        case 'home':
+            this.renderHomeView();
+            break;
         case 'generator':
             this.renderGeneratorView();
             break;
@@ -77,11 +82,22 @@ class TempMailApp {
             this.renderInboxView();
             break;
         default:
-            this.renderGeneratorView();
+            this.renderHomeView();
         }
 
         // Update header navigation
         this.header.setActiveView(this.currentView);
+    }
+
+    async renderHomeView() {
+        const viewContainer = document.getElementById('view-container');
+        if (!viewContainer) return;
+
+        this.homePage = new HomePage();
+        viewContainer.innerHTML = this.homePage.render();
+        this.homePage.attachEventListeners();
+        await this.homePage.init();
+        this.homePage.updateContent();
     }
 
     renderGeneratorView() {
@@ -123,7 +139,7 @@ class TempMailApp {
         }
 
         this.currentAccount = null;
-        this.currentView = 'generator';
+        this.currentView = 'home';
         this.header.disableInbox();
         this.renderCurrentView();
     }
@@ -156,6 +172,12 @@ class TempMailApp {
     attachGlobalEventListeners() {
         // Global keyboard shortcuts
         document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + H for home
+            if ((e.ctrlKey || e.metaKey) && e.key === 'h') {
+                e.preventDefault();
+                this.handleViewChange('home');
+            }
+
             // Ctrl/Cmd + 1 for generator
             if ((e.ctrlKey || e.metaKey) && e.key === '1') {
                 e.preventDefault();
