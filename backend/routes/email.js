@@ -19,8 +19,8 @@ const {
  */
 router.post('/generate', 
     accountCreationLimiter,
+    validateAccountCreation,
     sanitizeInput,
-    validateAccountCreation, 
     async (req, res) => {
         try {
             const { address, password } = req.body;
@@ -58,8 +58,8 @@ router.post('/generate',
  */
 router.get('/:address/inbox',
     messageLimiter,
-    sanitizeInput,
     validateEmailParam,
+    sanitizeInput,
     async (req, res) => {
         try {
             const { address } = req.params;
@@ -112,8 +112,8 @@ router.get('/:address/inbox',
  */
 router.get('/:address/message/:id',
     messageLimiter,
-    sanitizeInput,
     validateEmailParam,
+    sanitizeInput,
     async (req, res) => {
         try {
             const { address, id } = req.params;
@@ -163,8 +163,8 @@ router.get('/:address/message/:id',
  * @access  Public
  */
 router.delete('/:address',
-    sanitizeInput,
     validateEmailParam,
+    sanitizeInput,
     async (req, res) => {
         try {
             const { address } = req.params;
@@ -212,8 +212,8 @@ router.delete('/:address',
  * @access  Public
  */
 router.get('/:address/info',
-    sanitizeInput,
     validateEmailParam,
+    sanitizeInput,
     async (req, res) => {
         try {
             const { address } = req.params;

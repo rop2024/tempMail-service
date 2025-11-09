@@ -40,27 +40,29 @@ function setupEventListeners() {
     });
 }
 
-// Load available domains from Mail.tm API
+// Load available domains (using common Mail.tm domains)
 async function loadDomains() {
     try {
         domainSelect.innerHTML = '<option value="">Loading domains...</option>';
 
-        const response = await fetch(`${API_BASE_URL}/domains`);
-        if (!response.ok) throw new Error('Failed to fetch domains');
+        // Use common Mail.tm domains instead of fetching dynamically
+        const commonDomains = [
+            '1secmail.com',
+            '1secmail.org',
+            '1secmail.net',
+            'wwjmp.com',
+            'esiix.com',
+            'xojxe.com',
+            'yoggm.com'
+        ];
 
-        const data = await response.json();
-
-        if (data['hydra:member'] && data['hydra:member'].length > 0) {
-            domainSelect.innerHTML = '<option value="">Select a domain</option>';
-            data['hydra:member'].forEach(domain => {
-                const option = document.createElement('option');
-                option.value = domain.domain;
-                option.textContent = domain.domain;
-                domainSelect.appendChild(option);
-            });
-        } else {
-            domainSelect.innerHTML = '<option value="">No domains available</option>';
-        }
+        domainSelect.innerHTML = '<option value="">Select a domain</option>';
+        commonDomains.forEach(domain => {
+            const option = document.createElement('option');
+            option.value = domain;
+            option.textContent = domain;
+            domainSelect.appendChild(option);
+        });
     } catch (error) {
         console.error('Error loading domains:', error);
         domainSelect.innerHTML = '<option value="">Error loading domains</option>';
