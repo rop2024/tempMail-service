@@ -272,26 +272,89 @@ export async function getAccountInfo(address) {
 }
 
 /**
- * Health check for backend API
- * @returns {Promise<Object>} Health status
+ * Download an attachment from a specific message
+ * @param {string} address - Email address
+ * @param {string} messageId - Message ID
+ * @param {string} attachmentId - Attachment ID
+ * @param {string} filename - Suggested filename
+ * @returns {Promise<Object>} Download result
  */
-export async function healthCheck() {
+export async function downloadAttachment(address, messageId, attachmentId, filename = 'attachment') {
     try {
-        const data = await fetchAPI('/health', {}, true); // Cache health check
+        if (!address || !address.includes('@')) {
+            throw new Error('Valid email address is required');
+        }
+
+        if (!messageId) {
+            throw new Error('Message ID is required');
+        }
+
+        if (!attachmentId) {
+            throw new Error('Attachment ID is required');
+        }
+
+        const response = await fetch(`${API_BASE_URL}/email/${encodeURIComponent(address)}/message/${encodeURIComponent(messageId)}/attachment/${encodeURIComponent(attachmentId)}`);
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+            throw new Error(errorData.error || `Download failed: ${response.status}`);
+        }
+
+        // Create blob from response
+        const blob = await response.blob();
+
+        // Create download link
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
 
         return {
             success: true,
-            status: data.status,
-            message: data.message,
-            timestamp: data.timestamp
+            message: 'Attachment downloaded successfully'
         };
 
     } catch (error) {
-        console.error('Health check failed:', error);
+        console.error('Error downloading attachment:', error);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+}
+export async function checkAccountStatus(address) {
+    try {
+        if (!address || !address.includes('@')) {
+            throw new Error('Valid email address is required');
+        }
+
+        const data = await fetchAPI(`/email/${encodeURIComponent(address)}/info`);
+
+        return {
+            success: true,
+            data: data.data,
+            isValid: true
+        };
+
+    } catch (error) {
+        // Check for specific error codes
+        if (error.message.includes('deleted') || error.message.includes('not found')) {
+            return {
+                success: false,
+                error: error.message,
+                isValid: false,
+                code: 'ACCOUNT_INVALID'
+            };
+        }
+
         return {
             success: false,
             error: error.message,
-            status: 'unhealthy'
+            isValid: false
         };
     }
 }

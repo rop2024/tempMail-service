@@ -275,19 +275,46 @@ class MailTMService {
     }
 
     /**
-     * Get statistics about stored accounts
-     * @returns {Object} Statistics
+     * Download an attachment from a message
+     * @param {string} accountId - Account ID
+     * @param {string} messageId - Message ID
+     * @param {string} attachmentId - Attachment ID
+     * @returns {Promise<Object>} Attachment stream data
      */
-    getStats() {
-        return {
-            totalAccounts: this.accounts.size,
-            accounts: Array.from(this.accounts.values()).map(acc => ({
-                id: acc.id,
-                address: acc.address,
-                createdAt: acc.createdAt,
-                lastAccessed: acc.lastAccessed
-            }))
-        };
+    async downloadAttachment(accountId, messageId, attachmentId) {
+        try {
+            const account = this.accounts.get(accountId);
+            if (!account) {
+                throw new Error('Account not found');
+            }
+
+            // Update last accessed time
+            account.lastAccessed = new Date();
+
+            const response = await this.axiosInstance.get(`/messages/${messageId}/attachment/${attachmentId}`, {
+                headers: {
+                    'Authorization': `Bearer ${account.token}`
+                },
+                responseType: 'stream'
+            });
+
+            return {
+                success: true,
+                data: {
+                    stream: response.data,
+                    headers: response.headers
+                }
+            };
+
+        } catch (error) {
+            console.error('Error downloading attachment:', error.response?.data || error.message);
+            
+            return {
+                success: false,
+                error: this.normalizeError(error),
+                details: error.response?.data || { message: error.message }
+            };
+        }
     }
 }
 

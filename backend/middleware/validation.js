@@ -58,12 +58,12 @@ const validateEmailParam = (req, res, next) => {
 };
 
 /**
- * Validate message ID parameter
+ * Validate message ID parameter (handles both 'id' and 'messageId' param names)
  */
-const validateMessageId = (req, res, next) => {
-    const { id } = req.params;
+const validateMessageIdParam = (req, res, next) => {
+    const messageId = req.params.id || req.params.messageId;
 
-    if (!id || !validator.isMongoId(id)) {
+    if (!messageId || !validator.isMongoId(messageId)) {
         return res.status(400).json({
             success: false,
             error: 'Valid message ID is required'
@@ -102,5 +102,6 @@ module.exports = {
     validateAccountCreation,
     validateEmailParam,
     validateMessageId,
+    validateMessageIdParam,
     sanitizeInput
 };

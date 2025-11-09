@@ -5,6 +5,7 @@ const {
     validateAccountCreation,
     validateEmailParam,
     validateMessageId,
+    validateMessageIdParam,
     sanitizeInput
 } = require('../middleware/validation');
 const {
@@ -254,6 +255,60 @@ router.get('/:address/info',
             res.status(500).json({
                 success: false,
                 error: 'Internal server error while fetching account info'
+            });
+        }
+    }
+);
+
+/**
+ * @route   GET /api/email/:address/message/:messageId/attachment/:attachmentId
+ * @desc    Download an attachment from a specific message
+ * @access  Public
+ */
+router.get('/:address/message/:messageId/attachment/:attachmentId',
+    sanitizeInput,
+    validateEmailParam,
+    validateMessageIdParam,
+    async (req, res) => {
+        try {
+            const { address, messageId, attachmentId } = req.params;
+
+            // Find account by address
+            const accounts = Array.from(mailTMService.accounts.values());
+            const account = accounts.find(acc => acc.address === address);
+
+            if (!account) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'Email account not found'
+                });
+            }
+
+            const result = await mailTMService.downloadAttachment(account.id, messageId, attachmentId);
+
+            if (result.success) {
+                // Set appropriate headers for download
+                const contentType = result.data.headers['content-type'] || 'application/octet-stream';
+                const filename = result.data.headers['content-disposition']?.split('filename=')[1]?.replace(/"/g, '') || attachmentId;
+
+                res.setHeader('Content-Type', contentType);
+                res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+                // Pipe the stream to response
+                result.data.stream.pipe(res);
+            } else {
+                res.status(404).json({
+                    success: false,
+                    error: result.error,
+                    details: result.details
+                });
+            }
+
+        } catch (error) {
+            console.error('Error in attachment download endpoint:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Internal server error while downloading attachment'
             });
         }
     }

@@ -1,4 +1,4 @@
-import { getInbox, getMessage, deleteAddress } from '../utils/api.js';
+import { getInbox, getMessage, deleteAddress, downloadAttachment, checkAccountStatus } from '../utils/api.js';
 import { pollingService } from '../services/pollingService.js';
 
 export class InboxView {
@@ -8,17 +8,24 @@ export class InboxView {
         this.messages = [];
         this.state = {
             isLoading: false,
+            isAccountValid: true,
             selectedMessage: null,
             autoRefresh: true,
             lastPollTime: null,
             pollError: null,
-            messageCount: 0
+            retryCount: 0,
+            maxRetries: 3
         };
 
         this.pollingInterval = 15000; // 15 seconds
     }
 
     render() {
+        // Show account expired message if account is invalid
+        if (!this.state.isAccountValid) {
+            return this.renderExpiredAccount();
+        }
+
         return `
             <div class="max-w-6xl mx-auto">
                 <!-- Inbox Header -->
@@ -34,6 +41,10 @@ export class InboxView {
                                 <div class="flex items-center">
                                     <i class="fas fa-clock mr-2"></i>
                                     <span>Created: ${this.formatDate(this.account.createdAt)}</span>
+                                </div>
+                                <div class="flex items-center text-green-600">
+                                    <i class="fas fa-check-circle mr-2"></i>
+                                    <span>Active</span>
                                 </div>
                             </div>
                         </div>
@@ -79,6 +90,12 @@ export class InboxView {
                                     <i class="fas fa-clock mr-1"></i>
                                     Last update: <span id="lastPollTime">${this.state.lastPollTime ? this.formatTime(this.state.lastPollTime) : 'Never'}</span>
                                 </div>
+                                ${this.state.retryCount > 0 ? `
+                                    <div class="text-orange-600">
+                                        <i class="fas fa-redo mr-1"></i>
+                                        Retry ${this.state.retryCount}/${this.state.maxRetries}
+                                    </div>
+                                ` : ''}
                             </div>
                             <div class="text-gray-500">
                                 Next update in: <span id="nextPollCountdown">--</span>
@@ -86,9 +103,17 @@ export class InboxView {
                         </div>
                         ${this.state.pollError ? `
                             <div class="mt-2 bg-red-50 border border-red-200 rounded-lg p-3">
-                                <div class="flex items-center text-red-800">
-                                    <i class="fas fa-exclamation-circle mr-2"></i>
-                                    <span>${this.state.pollError}</span>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center text-red-800">
+                                        <i class="fas fa-exclamation-circle mr-2"></i>
+                                        <span>${this.state.pollError}</span>
+                                    </div>
+                                    <button
+                                        id="retryPollingBtn"
+                                        class="bg-red-600 text-white px-4 py-1 rounded text-sm hover:bg-red-700 transition duration-200"
+                                    >
+                                        Retry Now
+                                    </button>
                                 </div>
                             </div>
                         ` : ''}
@@ -174,12 +199,38 @@ export class InboxView {
         `;
     }
 
-    renderLoading() {
+    renderExpiredAccount() {
         return `
-            <div class="text-center py-12">
-                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-                <p class="mt-4 text-gray-600">Loading your messages...</p>
-                <p class="text-sm text-gray-500 mt-2">Polling every ${this.pollingInterval / 1000} seconds</p>
+            <div class="max-w-2xl mx-auto">
+                <div class="bg-white rounded-2xl shadow-xl p-8 text-center">
+                    <div class="text-6xl text-red-500 mb-4">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h2 class="text-3xl font-bold text-gray-800 mb-4">Account Expired</h2>
+                    <p class="text-gray-600 mb-6">
+                        The email address <strong class="font-mono">${this.account.address}</strong> has been deleted or expired.
+                    </p>
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                        <div class="flex items-center text-red-800">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            <span>Temporary email addresses are automatically deleted after 24 hours of inactivity.</span>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <button
+                            id="createNewAccountBtn"
+                            class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 font-semibold"
+                        >
+                            <i class="fas fa-plus-circle mr-2"></i>Create New Email Account
+                        </button>
+                        <button
+                            id="tryRecoverBtn"
+                            class="w-full bg-gray-600 text-white py-3 px-6 rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition duration-200 font-semibold"
+                        >
+                            <i class="fas fa-redo mr-2"></i>Try to Recover Account
+                        </button>
+                    </div>
+                </div>
             </div>
         `;
     }
@@ -247,7 +298,12 @@ export class InboxView {
 
                                 <div class="flex items-center space-x-3 mt-2 text-xs text-gray-500">
                                     <span>${this.formatDate(message.createdAt)}</span>
-                                    ${message.attachments ? `<span><i class="fas fa-paperclip mr-1"></i>${message.attachments}</span>` : ''}
+                                    ${message.hasAttachments ? `
+                                        <span class="flex items-center text-blue-600">
+                                            <i class="fas fa-paperclip mr-1"></i>
+                                            ${message.attachments.length} attachment${message.attachments.length > 1 ? 's' : ''}
+                                        </span>
+                                    ` : ''}
                                     ${!message.seen ? `<span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">New</span>` : ''}
                                 </div>
                             </div>
@@ -259,14 +315,27 @@ export class InboxView {
     }
 
     async init() {
-        await this.loadMessages();
-        this.attachEventListeners();
+        // Check account status first
+        await this.checkAccountValidity();
 
-        if (this.state.autoRefresh) {
-            this.startPolling();
+        if (this.state.isAccountValid) {
+            await this.loadMessages();
+            this.attachEventListeners();
+
+            if (this.state.autoRefresh) {
+                this.startPolling();
+            }
+
+            this.startCountdownTimer();
         }
+    }
 
-        this.startCountdownTimer();
+    async checkAccountValidity() {
+        const result = await checkAccountStatus(this.account.address);
+        this.updateState({
+            isAccountValid: result.isValid,
+            pollError: result.success ? null : result.error
+        });
     }
 
     attachEventListeners() {
@@ -318,6 +387,29 @@ export class InboxView {
             });
         }
 
+        // Retry polling button (when there's an error)
+        const retryPollingBtn = document.getElementById('retryPollingBtn');
+        if (retryPollingBtn) {
+            retryPollingBtn.addEventListener('click', () => {
+                this.retryPolling();
+            });
+        }
+
+        // Expired account buttons
+        const createNewAccountBtn = document.getElementById('createNewAccountBtn');
+        if (createNewAccountBtn) {
+            createNewAccountBtn.addEventListener('click', () => {
+                this.handleCreateNewAccount();
+            });
+        }
+
+        const tryRecoverBtn = document.getElementById('tryRecoverBtn');
+        if (tryRecoverBtn) {
+            tryRecoverBtn.addEventListener('click', () => {
+                this.tryRecoverAccount();
+            });
+        }
+
         // Message click events
         this.attachMessageEventListeners();
     }
@@ -333,17 +425,24 @@ export class InboxView {
     }
 
     async loadMessages(forceRefresh = false) {
-        this.updateState({ isLoading: true, pollError: null });
+        this.updateState({
+            isLoading: true,
+            pollError: null
+        });
 
         const result = await getInbox(this.account.address, forceRefresh);
 
         this.updateState({
             isLoading: false,
-            lastPollTime: new Date().toISOString(),
-            pollError: result.success ? null : result.error
+            lastPollTime: new Date().toISOString()
         });
 
         if (result.success) {
+            this.updateState({
+                retryCount: 0, // Reset retry count on success
+                pollError: null
+            });
+
             const previousCount = this.messages.length;
             this.messages = result.messages;
 
@@ -360,8 +459,34 @@ export class InboxView {
                 this.renderMessagesSection();
             }
         } else {
-            this.showError('Failed to load messages: ' + result.error);
+            // Handle specific error cases
+            if (result.error.includes('deleted') || result.error.includes('not found')) {
+                this.updateState({
+                    isAccountValid: false,
+                    pollError: 'Account has been deleted or expired'
+                });
+                this.stopPolling();
+            } else {
+                // Increment retry count for transient errors
+                this.updateState({
+                    retryCount: this.state.retryCount + 1,
+                    pollError: result.error
+                });
+
+                if (this.state.retryCount >= this.state.maxRetries) {
+                    this.showError(`Failed to load messages after ${this.state.maxRetries} attempts: ${result.error}`);
+                    this.updateState({ autoRefresh: false });
+                    this.stopPolling();
+                } else {
+                    this.showError(`Failed to load messages (${this.state.retryCount}/${this.state.maxRetries}): ${result.error}`);
+                }
+            }
         }
+    }
+
+    retryPolling() {
+        this.updateState({ retryCount: 0, pollError: null });
+        this.loadMessages(true);
     }
 
     renderMessagesSection() {
@@ -423,6 +548,9 @@ export class InboxView {
                     </div>
                 </div>
 
+                <!-- Attachments -->
+                ${message.hasAttachments ? this.renderAttachmentsSection(message.attachments) : ''}
+
                 <!-- Message Body -->
                 <div class="flex-1 overflow-auto">
                     <div class="p-6">
@@ -457,7 +585,91 @@ export class InboxView {
             if (e.target === modal) closeModal();
         });
 
+        // Add attachment download listeners
+        if (message.hasAttachments) {
+            this.attachAttachmentListeners(modal, message.attachments);
+        }
+
         document.body.appendChild(modal);
+    }
+
+    renderAttachmentsSection(attachments) {
+        return `
+            <div class="p-6 border-b border-gray-200 bg-blue-50">
+                <h4 class="text-lg font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-paperclip mr-2"></i>Attachments (${attachments.length})
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    ${attachments.map(attachment => `
+                        <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition duration-200">
+                            <div class="flex items-center space-x-3 min-w-0">
+                                <div class="text-blue-500 text-xl">
+                                    <i class="fas fa-file"></i>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <div class="font-medium text-gray-800 truncate" title="${this.escapeHtml(attachment.filename)}">
+                                        ${this.escapeHtml(attachment.filename)}
+                                    </div>
+                                    <div class="text-sm text-gray-500">
+                                        ${this.formatFileSize(attachment.size)} • ${attachment.contentType}
+                                    </div>
+                                </div>
+                            </div>
+                            <button
+                                class="download-attachment-btn bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition duration-200"
+                                data-attachment-id="${attachment.id}"
+                                data-filename="${this.escapeHtml(attachment.filename)}"
+                                ${attachment.error ? 'disabled' : ''}
+                                title="${attachment.error ? 'Failed to load attachment' : 'Download attachment'}"
+                            >
+                                <i class="fas fa-download"></i>
+                            </button>
+                        </div>
+                    `).join('')}
+                </div>
+                ${attachments.some(a => a.error) ? `
+                    <div class="mt-3 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                        <div class="flex items-center text-yellow-800 text-sm">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>
+                            <span>Some attachments failed to load. You can still try to download them.</span>
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    attachAttachmentListeners(modal, attachments) {
+        const downloadButtons = modal.querySelectorAll('.download-attachment-btn');
+        downloadButtons.forEach(button => {
+            button.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const attachmentId = e.currentTarget.dataset.attachmentId;
+                const filename = e.currentTarget.dataset.filename;
+
+                // Show loading state
+                const originalHTML = e.currentTarget.innerHTML;
+                e.currentTarget.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                e.currentTarget.disabled = true;
+
+                try {
+                    const result = await downloadAttachment(this.account.address, attachmentId, filename);
+                    if (result.success) {
+                        this.showSuccess('Attachment download started');
+                    } else {
+                        this.showError('Failed to download attachment: ' + result.error);
+                        // Reset button state
+                        e.currentTarget.innerHTML = originalHTML;
+                        e.currentTarget.disabled = false;
+                    }
+                } catch (error) {
+                    this.showError('Failed to download attachment: ' + error.message);
+                    // Reset button state
+                    e.currentTarget.innerHTML = originalHTML;
+                    e.currentTarget.disabled = false;
+                }
+            });
+        });
     }
 
     renderMessageContent(message) {
@@ -581,7 +793,7 @@ export class InboxView {
     }
 
     async deleteAccount() {
-        if (!confirm('Are you sure you want to delete this email account? All messages will be lost and this action cannot be undone.')) {
+        if (!confirm('Are you sure you want to delete this email account? All messages will be permanently lost and this action cannot be undone.')) {
             return;
         }
 
@@ -590,11 +802,31 @@ export class InboxView {
         if (result.success) {
             this.stopPolling();
             this.showSuccess('Account deleted successfully');
+            this.updateState({ isAccountValid: false });
             if (this.onAccountDeleted) {
                 this.onAccountDeleted();
             }
         } else {
             this.showError('Failed to delete account: ' + result.error);
+        }
+    }
+
+    handleCreateNewAccount() {
+        if (this.onAccountDeleted) {
+            this.onAccountDeleted();
+        }
+    }
+
+    async tryRecoverAccount() {
+        this.showNotification('Attempting to recover account...', 'info');
+        await this.checkAccountValidity();
+
+        if (this.state.isAccountValid) {
+            this.showSuccess('Account recovered successfully!');
+            await this.loadMessages(true);
+            this.attachEventListeners();
+        } else {
+            this.showError('Unable to recover account. It may have been permanently deleted.');
         }
     }
 
@@ -739,3 +971,12 @@ export class InboxView {
         this.stopPolling();
     }
 }
+
+// Utility method for file size formatting
+InboxView.prototype.formatFileSize = function(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
